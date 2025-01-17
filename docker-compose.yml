@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  mongo-express:
+    image: mongo-express:latest
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password123@mongodb:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password123
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  shared:
+    build:
+      context: ./shared
+      dockerfile: Dockerfile
+    volumes:
+      - ./shared:/app
+      - shared_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run build && npm link"
+
+  movie-service:
+    build:
+      context: ./services/movie-service
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/movie-director-hub?authSource=admin
+      - REDIS_URI=redis://redis:6379
+      - PORT=3000
+      - CORS_ORIGIN=*
+    volumes:
+      - ./services/movie-service:/app
+      - movie_service_node_modules:/app/node_modules
+      - shared_node_modules:/app/node_modules/@movie-director-hub/shared
+    depends_on:
+      - mongodb
+      - redis
+      - shared
+    command: sh -c "npm install && npm link @movie-director-hub/shared && npm run dev"
+
+volumes:
+  mongodb_data:
+  redis_data:
+  movie_service_node_modules:
+  shared_node_modules: 
