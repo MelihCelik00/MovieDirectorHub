@@ -1,7 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 import { z } from 'zod';
 
-// Zod schema for validation
 export const movieSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(2000),
@@ -40,7 +39,6 @@ export interface IMovie extends Document {
   updatedAt: Date;
 }
 
-// Mongoose schema
 const movieMongooseSchema = new Schema<IMovie>(
   {
     title: {
@@ -96,12 +94,10 @@ const movieMongooseSchema = new Schema<IMovie>(
   }
 );
 
-// Indexes
 movieMongooseSchema.index({ title: 1 });
 movieMongooseSchema.index({ releaseDate: 1 });
 movieMongooseSchema.index({ genre: 1 });
 movieMongooseSchema.index({ directorId: 1 });
 movieMongooseSchema.index({ imdbId: 1 }, { unique: true });
 
-// Export the model
 export const MovieModel = model<IMovie>('Movie', movieMongooseSchema); 

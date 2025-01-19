@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
 // Configuration schema
@@ -37,7 +36,6 @@ const configSchema = z.object({
 // Configuration type
 type Config = z.infer<typeof configSchema>;
 
-// Parse and validate configuration
 const config: Config = configSchema.parse({
   server: {
     port: process.env.PORT,

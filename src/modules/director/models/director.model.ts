@@ -1,7 +1,6 @@
 import { Schema, model, Document } from 'mongoose';
 import { z } from 'zod';
 
-// Zod schema for validation
 export const directorSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
@@ -17,7 +16,6 @@ export const directorSchema = z.object({
   bio: z.string().min(1).max(1000).optional(),
 });
 
-// Interface extending Document
 export interface IDirector extends Document {
   firstName: string;
   lastName: string;
@@ -27,7 +25,6 @@ export interface IDirector extends Document {
   updatedAt: Date;
 }
 
-// Mongoose schema
 const directorMongooseSchema = new Schema<IDirector>(
   {
     firstName: {
@@ -65,9 +62,7 @@ const directorMongooseSchema = new Schema<IDirector>(
   }
 );
 
-// Indexes
 directorMongooseSchema.index({ firstName: 1, lastName: 1 });
 directorMongooseSchema.index({ birthDate: 1 });
 
-// Export the model
 export const DirectorModel = model<IDirector>('Director', directorMongooseSchema); 

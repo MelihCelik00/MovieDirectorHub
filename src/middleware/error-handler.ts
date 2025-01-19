@@ -12,7 +12,6 @@ export const errorHandler = (
 ) => {
   const formattedError = formatError(error);
 
-  // Log error
   if (!isOperationalError(error)) {
     logger.error('Unhandled error:', {
       error: formattedError,
@@ -24,7 +23,6 @@ export const errorHandler = (
     });
   }
 
-  // Send error response
   const response = {
     status: formattedError.status,
     code: formattedError.code,
