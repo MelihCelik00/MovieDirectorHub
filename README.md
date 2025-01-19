@@ -12,6 +12,7 @@ A robust and scalable backend solution for managing movies and directors, built 
 - [API Documentation](#api-documentation)
 - [Error Handling](#error-handling)
 - [Future Developments](#future-developments)
+- [API Data Formats and Validation](#api-data-formats-and-validation)
 
 ## System Architecture
 
@@ -409,3 +410,99 @@ The project is designed to evolve into microservices when:
    - Geographic distribution requirements
 
 This architectural decision prioritizes development speed, simplicity, and maintainability while keeping the door open for future evolution as the project grows.
+
+## API Data Formats and Validation
+
+### Movies
+
+#### Date Formats
+The API accepts multiple date formats for the `releaseDate` field:
+- YYYY-MM-DD (e.g., "2017-12-01")
+- ISO 8601 (e.g., "2017-12-01T00:00:00.000Z")
+- Date objects
+
+#### Rating
+- Accepts both number and string formats (e.g., 7.4 or "7.4")
+- Must be between 0 and 10
+- Optional field
+
+#### IMDB ID
+- Must start with "tt" followed by 7-8 digits (e.g., "tt4925292")
+- If "tt" prefix is missing, it will be automatically added
+- Must be unique across all movies
+
+#### Other Fields
+- `title`: Required, 1-200 characters
+- `description`: Required, 1-2000 characters
+- `genre`: Required, 1-50 characters
+- `directorId`: Required, must be a valid MongoDB ObjectId
+
+### Directors
+
+#### Date Formats
+The API accepts multiple date formats for the `birthDate` field:
+- YYYY-MM-DD (e.g., "1970-07-30")
+- ISO 8601 (e.g., "1970-07-30T00:00:00.000Z")
+
+#### Required Fields
+- `firstName`: 1-50 characters
+- `lastName`: 1-50 characters
+- `birthDate`: Valid date in accepted formats
+
+#### Optional Fields
+- `bio`: String, up to 2000 characters
+
+### Search Endpoints
+
+#### Movies
+- Search by genre: `/api/movies/search/genre?genre=Drama`
+- Search by rating range: `/api/movies/search/rating?min=7.0&max=10.0`
+- Search by release date range: `/api/movies/search/release-date?from=2000-01-01&to=2020-01-01`
+- Search by IMDB ID: `/api/movies/imdb/:imdbId`
+- Search by director: `/api/movies/director/:directorId`
+
+#### Directors
+- Search by name: `/api/directors/search?firstName=Christopher&lastName=Nolan`
+- Search by birth date range: `/api/directors/search/date-range?from=1960-01-01&to=1980-01-01`
+
+### Dependencies
+The application uses:
+- Zod for runtime type checking and validation
+- MongoDB for data persistence
+- Express for the REST API
+
+### Validation and Error Handling
+
+The API implements robust validation using Zod schema validation:
+
+#### Input Validation
+- All inputs are validated before processing
+- Automatic type coercion where appropriate (e.g., string to number for ratings)
+- Format validation for special fields (IMDB ID, dates, ObjectIds)
+- Cross-reference validation (e.g., checking if director exists)
+
+#### Error Responses
+The API provides detailed error messages in a consistent format:
+```json
+{
+  "status": "error",
+  "code": 400,
+  "message": "Validation failed: [field]: [specific error message]",
+  "timestamp": "2025-01-19T14:31:08.204Z",
+  "path": "/api/endpoint"
+}
+```
+
+#### Validation Features
+- Automatic data transformation (e.g., adding "tt" prefix to IMDB IDs)
+- Multiple format support for dates
+- Flexible input formats (e.g., numbers as strings)
+- Detailed error messages for each validation failure
+- Required vs optional field validation
+- Range and format validation for specific fields
+
+#### Error Types
+- `ValidationError`: Input validation failures
+- `NotFoundError`: Resource not found
+- `DatabaseError`: Database operation failures
+- Each error type includes specific details about the failure
