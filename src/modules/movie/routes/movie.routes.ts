@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { MovieController } from '../controllers/movie.controller';
 import { wrapRoute } from '../../shared/utils/route-wrapper';
+import { MovieFactory } from '../movie.factory';
 
 const router = Router();
-const controller = new MovieController();
+const controller = MovieFactory.getController();
 
 /**
  * @swagger
@@ -78,6 +78,12 @@ router.get('/search/genre', wrapRoute(controller.getMoviesByGenre));
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Movie'
+ *       400:
+ *         description: Invalid date format or range
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/search/release-date', wrapRoute(controller.getMoviesByReleaseYearRange));
 

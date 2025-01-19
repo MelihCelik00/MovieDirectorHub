@@ -4,22 +4,33 @@ import { movieSchema, IMovie } from '../models/movie.model';
 import { NotFoundError, ValidationError } from '../../../utils/errors';
 import { PaginatedResult, PaginationOptions } from '../../shared/repositories/base.repository';
 import { DirectorService } from '../../director/services/director.service';
+import { z } from 'zod';
 
 export class MovieService {
-  private repository: MovieRepository;
-  private directorService: DirectorService;
-
-  constructor() {
-    this.repository = new MovieRepository();
-    this.directorService = new DirectorService();
-  }
+  constructor(
+    private readonly repository: MovieRepository,
+    private readonly directorService: DirectorService
+  ) {}
 
   async createMovie(data: Omit<IMovie, keyof Document>): Promise<IMovie> {
-    // Validate director exists
-    await this.directorService.getDirectorById(data.directorId.toString());
+    try {
+      // Validate director exists first
+      await this.directorService.getDirectorById(data.directorId.toString());
 
-    const validatedData = movieSchema.parse(data);
-    return this.repository.create(validatedData);
+      // Coerce rating to number if it's a string
+      if (typeof data.rating === 'string') {
+        data.rating = parseFloat(data.rating);
+      }
+
+      const validatedData = movieSchema.parse(data);
+      return this.repository.create(validatedData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const issues = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+        throw new ValidationError(`Validation failed: ${issues}`);
+      }
+      throw error;
+    }
   }
 
   async getMovieById(id: string): Promise<IMovie> {
@@ -52,15 +63,23 @@ export class MovieService {
       await this.directorService.getDirectorById(data.directorId.toString());
     }
 
-    // Validate the update data
-    const validatedData = movieSchema.partial().parse(data);
+    try {
+      // Validate the update data
+      const validatedData = movieSchema.partial().parse(data);
 
-    const updatedMovie = await this.repository.update(id, validatedData);
-    if (!updatedMovie) {
-      throw new NotFoundError(`Movie with ID ${id} not found`);
+      const updatedMovie = await this.repository.update(id, validatedData);
+      if (!updatedMovie) {
+        throw new NotFoundError(`Movie with ID ${id} not found`);
+      }
+
+      return updatedMovie;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const issues = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+        throw new ValidationError(`Validation failed: ${issues}`);
+      }
+      throw error;
     }
-
-    return updatedMovie;
   }
 
   async deleteMovie(id: string): Promise<void> {
@@ -93,12 +112,12 @@ export class MovieService {
     return this.repository.findByGenre(genre);
   }
 
-  async getMoviesByReleaseYearRange(startYear: number, endYear: number): Promise<IMovie[]> {
-    if (startYear > endYear) {
-      throw new ValidationError('Start year must be before end year');
+  async getMoviesByReleaseYearRange(fromDate: Date, toDate: Date): Promise<IMovie[]> {
+    if (fromDate > toDate) {
+      throw new ValidationError('Start date must be before end date');
     }
 
-    return this.repository.findByReleaseYearRange(startYear, endYear);
+    return this.repository.findByReleaseDateRange(fromDate, toDate);
   }
 
   async getMoviesByRatingRange(minRating: number, maxRating: number): Promise<IMovie[]> {

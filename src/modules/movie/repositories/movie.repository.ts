@@ -3,8 +3,8 @@ import { MongoDBRepository } from '../../shared/repositories/mongodb.repository'
 import { IMovie, MovieModel } from '../models/movie.model';
 
 export class MovieRepository extends MongoDBRepository<IMovie> {
-  constructor() {
-    super(MovieModel);
+  constructor(model = MovieModel) {
+    super(model);
   }
 
   async findByDirector(directorId: string): Promise<IMovie[]> {
@@ -19,15 +19,12 @@ export class MovieRepository extends MongoDBRepository<IMovie> {
     return this.find({ genre });
   }
 
-  async findByReleaseYearRange(startYear: number, endYear: number): Promise<IMovie[]> {
-    const startDate = new Date(startYear, 0, 1);
-    const endDate = new Date(endYear, 11, 31);
-    
+  async findByReleaseDateRange(fromDate: Date, toDate: Date): Promise<IMovie[]> {
     return this.find({
       releaseDate: {
-        $gte: startDate,
-        $lte: endDate,
-      },
+        $gte: fromDate,
+        $lte: toDate
+      }
     });
   }
 
@@ -35,8 +32,8 @@ export class MovieRepository extends MongoDBRepository<IMovie> {
     return this.find({
       rating: {
         $gte: minRating,
-        $lte: maxRating,
-      },
+        $lte: maxRating
+      }
     });
   }
 } 

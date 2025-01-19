@@ -4,11 +4,7 @@ import { RequestHandler, parsePaginationQuery } from '../../shared/types/control
 import { ValidationError } from '../../../utils/errors';
 
 export class MovieController {
-  private service: MovieService;
-
-  constructor() {
-    this.service = new MovieService();
-  }
+  constructor(private readonly service: MovieService) {}
 
   createMovie: RequestHandler = async (req: Request, res: Response) => {
     const movie = await this.service.createMovie(req.body);
@@ -68,30 +64,45 @@ export class MovieController {
   };
 
   getMoviesByReleaseYearRange: RequestHandler = async (req: Request, res: Response) => {
-    const { startYear, endYear } = req.query;
+    const { from, to } = req.query;
     
-    if (!startYear || !endYear) {
-      throw new ValidationError('Start year and end year are required');
+    if (!from || !to) {
+      throw new ValidationError('From date and to date are required');
     }
 
-    const movies = await this.service.getMoviesByReleaseYearRange(
-      parseInt(startYear as string, 10),
-      parseInt(endYear as string, 10)
-    );
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(from as string) || !dateRegex.test(to as string)) {
+      throw new ValidationError('Dates must be in YYYY-MM-DD format');
+    }
+
+    // Validate date values
+    const fromDate = new Date(from as string);
+    const toDate = new Date(to as string);
+    
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      throw new ValidationError('Invalid date values provided');
+    }
+
+    const movies = await this.service.getMoviesByReleaseYearRange(fromDate, toDate);
     res.json(movies);
   };
 
   getMoviesByRatingRange: RequestHandler = async (req: Request, res: Response) => {
-    const { minRating, maxRating } = req.query;
+    const { min, max } = req.query;
     
-    if (!minRating || !maxRating) {
+    if (!min || !max) {
       throw new ValidationError('Minimum and maximum ratings are required');
     }
 
-    const movies = await this.service.getMoviesByRatingRange(
-      parseFloat(minRating as string),
-      parseFloat(maxRating as string)
-    );
+    const minRating = parseFloat(min as string);
+    const maxRating = parseFloat(max as string);
+
+    if (isNaN(minRating) || isNaN(maxRating)) {
+      throw new ValidationError('Invalid rating values provided');
+    }
+
+    const movies = await this.service.getMoviesByRatingRange(minRating, maxRating);
     res.json(movies);
   };
 } 

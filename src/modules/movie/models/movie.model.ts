@@ -5,11 +5,26 @@ import { z } from 'zod';
 export const movieSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(2000),
-  releaseDate: z.date(),
+  releaseDate: z.union([
+    z.string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+      .transform((str) => new Date(str)),
+    z.string()
+      .datetime()
+      .transform((str) => new Date(str)),
+    z.date()
+  ]),
   genre: z.string().min(1).max(50),
-  rating: z.number().min(0).max(10).optional(),
-  imdbId: z.string().min(1).max(50),
-  directorId: z.instanceof(Types.ObjectId),
+  rating: z.union([
+    z.number().min(0).max(10),
+    z.string().transform((val) => parseFloat(val))
+  ]).optional(),
+  imdbId: z.string()
+    .regex(/^tt\d{7,8}$/, 'IMDB ID must start with "tt" followed by 7-8 digits')
+    .transform((val) => val.startsWith('tt') ? val : `tt${val}`),
+  directorId: z.string()
+    .regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId format')
+    .transform((str) => new Types.ObjectId(str)),
 });
 
 // Interface extending Document

@@ -307,3 +307,105 @@ The application implements a comprehensive error handling system:
    - Interactive API documentation
    - Code documentation improvements
    - Development guidelines
+
+## Architectural Decision: Monolithic vs Microservices
+
+This project implements a modular monolithic architecture instead of microservices. Here's the reasoning behind this decision:
+
+### Why Modular Monolith?
+
+1. **Project Scale**
+   - The current scope (movies and directors) doesn't justify the operational complexity of microservices
+   - Domain boundaries are clear but closely related
+   - Data consistency is crucial between movies and directors
+
+2. **Development Efficiency**
+   - Faster development and deployment cycles (important for efficient and agile teams)
+   - Simpler debugging and testing
+   - Easier to maintain code consistency
+   - Lower initial development overhead
+
+3. **Operational Simplicity**
+   - Single deployment unit
+   - Simpler monitoring and logging
+   - Less infrastructure complexity
+   - Lower operational costs in a production environment case
+
+4. **Team Size**
+   - Suitable for small to medium-sized teams
+   - No need for multiple specialized teams
+   - Easier knowledge sharing and onboarding
+
+### Future Scalability Considerations
+
+The current modular design allows for future migration to microservices if needed:
+
+1. **Module Independence**
+   - Clear boundaries between modules
+   - Separate business logic and data access layers
+   - Independent scaling possible through containerization
+
+2. **Migration Path**
+   - Modules can be extracted into microservices gradually
+   - Event-driven patterns can be introduced incrementally
+   - Service discovery and API gateway can be added when needed
+
+### Trade-offs Analysis
+
+#### Advantages of Current Approach
+
+1. **Simplicity**
+   - Single codebase
+   - Unified deployment
+   - Direct method calls instead of network calls
+   - Simpler testing and debugging
+
+2. **Performance**
+   - No network overhead between modules
+   - Shared resources (cache, database connections)
+   - Lower latency for cross-module operations
+
+3. **Consistency**
+   - Strong consistency for related data
+   - Simpler transaction management
+   - Unified schema updates
+
+4. **Resource Efficiency**
+   - Lower infrastructure costs
+   - Fewer moving parts
+   - Simplified monitoring
+
+#### What We Give Up
+
+1. **Independent Scaling**
+   - Cannot scale modules independently
+   - Resource allocation is shared
+
+2. **Technology Diversity**
+   - Locked into single technology stack
+   - Cannot optimize different modules with different technologies
+
+3. **Isolation**
+   - Bugs can potentially affect the entire system
+   - Deployments require full system updates
+
+### When to Consider Microservices
+
+The project is designed to evolve into microservices when:
+
+1. **Scale Indicators**
+   - High load on specific modules
+   - Need for independent scaling
+   - Different resource requirements per module
+
+2. **Team Growth**
+   - Multiple teams working on different modules
+   - Need for independent deployment cycles
+   - Specialized technology requirements
+
+3. **Business Requirements**
+   - Different availability requirements per module
+   - Need for different security levels
+   - Geographic distribution requirements
+
+This architectural decision prioritizes development speed, simplicity, and maintainability while keeping the door open for future evolution as the project grows.

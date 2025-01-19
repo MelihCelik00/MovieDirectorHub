@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { DirectorController } from '../controllers/director.controller';
 import { wrapRoute } from '../../shared/utils/route-wrapper';
+import { DirectorFactory } from '../director.factory';
 
 const router = Router();
-const controller = new DirectorController();
+const controller = DirectorFactory.getController();
 
 /**
  * @swagger

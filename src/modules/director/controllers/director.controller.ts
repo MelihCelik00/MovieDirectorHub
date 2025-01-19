@@ -4,11 +4,7 @@ import { RequestHandler, parsePaginationQuery } from '../../shared/types/control
 import { ValidationError } from '../../../utils/errors';
 
 export class DirectorController {
-  private service: DirectorService;
-
-  constructor() {
-    this.service = new DirectorService();
-  }
+  constructor(private readonly service: DirectorService) {}
 
   createDirector: RequestHandler = async (req: Request, res: Response) => {
     const director = await this.service.createDirector(req.body);

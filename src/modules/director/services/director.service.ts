@@ -5,11 +5,7 @@ import { NotFoundError, ValidationError } from '../../../utils/errors';
 import { PaginatedResult, PaginationOptions } from '../../shared/repositories/base.repository';
 
 export class DirectorService {
-  private repository: DirectorRepository;
-
-  constructor() {
-    this.repository = new DirectorRepository();
-  }
+  constructor(private readonly repository: DirectorRepository) {}
 
   async createDirector(data: Omit<IDirector, keyof Document>): Promise<IDirector> {
     const validatedData = directorSchema.parse(data);

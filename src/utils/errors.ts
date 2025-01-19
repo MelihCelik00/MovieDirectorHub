@@ -59,7 +59,13 @@ export const formatError = (error: any): AppError => {
     return new ValidationError(
       'Validation failed',
       undefined,
-      JSON.parse(error.message)
+      error.errors.map((err: any) => ({
+        field: err.path.join('.'),
+        message: err.message,
+        code: err.code,
+        received: err.received,
+        expected: err.expected
+      }))
     );
   }
 
@@ -71,6 +77,7 @@ export const formatError = (error: any): AppError => {
       Object.values(error.errors).map((err: any) => ({
         field: err.path,
         message: err.message,
+        value: err.value
       }))
     );
   }
