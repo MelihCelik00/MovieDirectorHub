@@ -10,9 +10,12 @@ A robust and scalable backend solution for managing movies and directors, built 
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [API Documentation](#api-documentation)
-- [Error Handling](#error-handling)
-- [Future Developments](#future-developments)
 - [API Data Formats and Validation](#api-data-formats-and-validation)
+- [Error Handling](#error-handling)
+- [Technology Choices and Comparisons](#technology-choices-and-comparisons)
+- [Benchmarking](#benchmarking)
+- [Pagination and Caching Strategy](#pagination-and-caching-strategy)
+- [Future Potential Development Areas](#future-potential-development-areas)
 
 ## System Architecture
 
@@ -32,6 +35,7 @@ The application follows a modular monolithic architecture with clear separation 
 - Dependency Injection
 - Factory Pattern
 - Singleton Pattern (for database connections)
+- Pagination Pattern
 
 ### Key Principles
 
@@ -87,9 +91,17 @@ src/
 │   │   ├── models/
 │   │   └── routes/
 │   └── shared/           # Shared module
+│   │   └── interceptors/
+│   │   └── repositories/ # mongodb
+│   │   └── schemas/
+│   │   └── services/ # for redis 
+│   │   └── types/
+│   │   └── utils/
 ├── middleware/           # Application middleware
-├── utils/               # Utility functions
-└── app.ts              # Application entry point
+├── utils/               # Global error management
+├── app.ts              # Application entry point
+├── Dockerfile
+└── Docker Compose
 ```
 
 ## Getting Started
@@ -103,7 +115,7 @@ src/
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/MelihCelik00/MovieDirectorHub.git
 cd MovieDirectorHub
 ```
 
@@ -244,173 +256,6 @@ The setup even includes health checks for all services:
   - Search movies by rating range
   - Query params: minRating, maxRating
 
-## Error Handling
-
-The application implements a comprehensive error handling system:
-
-### Error Types
-
-- **ValidationError** (400): Invalid input data
-- **NotFoundError** (404): Resource not found
-- **ConflictError** (409): Resource conflict
-- **DatabaseError** (500): Database operation errors
-
-### Error Response Format
-
-```json
-{
-  "status": "error",
-  "code": 400,
-  "message": "Validation failed",
-  "timestamp": "2024-01-19T12:00:00.000Z",
-  "path": "/api/movies",
-  "details": {}
-}
-```
-
-## Future Potential Development Areas
-
-1. **Authentication & Authorization**
-   - JWT-based authentication
-   - Role-based access control
-   - OAuth2 integration
-
-2. **Testing**
-   - Unit tests
-   - Integration tests
-   - E2E tests
-   - Test coverage reporting
-
-3. **Performance Optimizations**
-   - Query optimization
-   - Index optimization (Unique, Compound)
-   - Cache strategy improvements
-   - Connection pooling
-
-4. **Additional Features**
-   - Movie ratings and reviews
-   - Validating movies with IMDB apis
-   - User favorites
-   - Watchlists
-   - Advanced search with full-text search
-   - Image upload for movie posters
-   - Batch operations
-
-5. **Infrastructure**
-   - Docker containerization
-   - CI/CD pipeline
-   - Monitoring and alerting
-   - Performance metrics
-   - Auto-scaling
-
-6. **Documentation**
-   - API versioning
-   - Interactive API documentation
-   - Code documentation improvements
-   - Development guidelines
-
-## Architectural Decision: Monolithic vs Microservices
-
-This project implements a modular monolithic architecture instead of microservices. Here's the reasoning behind this decision:
-
-### Why Modular Monolith?
-
-1. **Project Scale**
-   - The current scope (movies and directors) doesn't justify the operational complexity of microservices
-   - Domain boundaries are clear but closely related
-   - Data consistency is crucial between movies and directors
-
-2. **Development Efficiency**
-   - Faster development and deployment cycles (important for efficient and agile teams)
-   - Simpler debugging and testing
-   - Easier to maintain code consistency
-   - Lower initial development overhead
-
-3. **Operational Simplicity**
-   - Single deployment unit
-   - Simpler monitoring and logging
-   - Less infrastructure complexity
-   - Lower operational costs in a production environment case
-
-4. **Team Size**
-   - Suitable for small to medium-sized teams
-   - No need for multiple specialized teams
-   - Easier knowledge sharing and onboarding
-
-### Future Scalability Considerations
-
-The current modular design allows for future migration to microservices if needed:
-
-1. **Module Independence**
-   - Clear boundaries between modules
-   - Separate business logic and data access layers
-   - Independent scaling possible through containerization
-
-2. **Migration Path**
-   - Modules can be extracted into microservices gradually
-   - Event-driven patterns can be introduced incrementally
-   - Service discovery and API gateway can be added when needed
-
-### Trade-offs Analysis
-
-#### Advantages of Current Approach
-
-1. **Simplicity**
-   - Single codebase
-   - Unified deployment
-   - Direct method calls instead of network calls
-   - Simpler testing and debugging
-
-2. **Performance**
-   - No network overhead between modules
-   - Shared resources (cache, database connections)
-   - Lower latency for cross-module operations
-
-3. **Consistency**
-   - Strong consistency for related data
-   - Simpler transaction management
-   - Unified schema updates
-
-4. **Resource Efficiency**
-   - Lower infrastructure costs
-   - Fewer moving parts
-   - Simplified monitoring
-
-#### What We Give Up
-
-1. **Independent Scaling**
-   - Cannot scale modules independently
-   - Resource allocation is shared
-
-2. **Technology Diversity**
-   - Locked into single technology stack
-   - Cannot optimize different modules with different technologies
-
-3. **Isolation**
-   - Bugs can potentially affect the entire system
-   - Deployments require full system updates
-
-### When to Consider Microservices
-
-The project is designed to evolve into microservices when:
-
-1. **Scale Indicators**
-   - High load on specific modules
-   - Need for independent scaling
-   - Different resource requirements per module
-
-2. **Team Growth**
-   - Multiple teams working on different modules
-   - Need for independent deployment cycles
-   - Specialized technology requirements
-
-3. **Business Requirements**
-   - Different availability requirements per module
-   - Need for different security levels
-   - Geographic distribution requirements
-
-This architectural decision prioritizes development speed, simplicity, and maintainability while keeping the door open for future evolution as the project grows.
-
 ## API Data Formats and Validation
 
 ### Movies
@@ -501,8 +346,353 @@ The API provides detailed error messages in a consistent format:
 - Required vs optional field validation
 - Range and format validation for specific fields
 
-#### Error Types
-- `ValidationError`: Input validation failures
-- `NotFoundError`: Resource not found
-- `DatabaseError`: Database operation failures
-- Each error type includes specific details about the failure
+## Error Handling
+
+The application has global error management:
+
+### Error Types
+
+- **ValidationError** (400): Invalid input data
+- **NotFoundError** (404): Resource not found
+- **ConflictError** (409): Resource conflict
+- **DatabaseError** (500): Database operation errors
+
+### Error Response Format
+
+```json
+{
+  "status": "error",
+  "code": 400,
+  "message": "Validation failed",
+  "timestamp": "2024-01-19T12:00:00.000Z",
+  "path": "/api/movies",
+  "details": {}
+}
+```
+---------
+**What you will find below are the challenges faced during the project, researched benchmarkings, performance efficient strategies.**
+
+-------------
+## Architectural Decision: Monolithic vs Microservices
+
+This project implements a modular monolithic architecture instead of microservices. Here's the reasoning behind this decision:
+>  Note: I tried to implement microservice architecture at first but then changed all planning and migrated to a monolithic structure. You can find my non-finished implementations at related microservice branch.
+
+### Why Modular Monolith?
+
+1. **Project Scale**
+   - The current scope (movies and directors) doesn't justify the operational complexity of microservices
+   - Domain boundaries are clear but closely related
+   - Data consistency is crucial between movies and directors
+
+2. **Development Efficiency**
+   - Faster development and deployment cycles (important for efficient and agile teams)
+   - Simpler debugging and testing
+   - Easier to maintain code consistency
+   - Lower initial development overhead
+
+3. **Operational Simplicity**
+   - Single deployment unit
+   - Simpler monitoring and logging
+   - Less infrastructure complexity
+   - Lower operational costs in a production environment case
+
+4. **Team Size**
+   - Suitable for small to medium-sized teams
+   - No need for multiple specialized teams
+   - Easier knowledge sharing and onboarding
+
+### Future Scalability Considerations
+
+The current modular design allows for future migration to microservices if needed:
+
+1. **Module Independence**
+   - Clear boundaries between modules
+   - Separate business logic and data access layers
+   - Independent scaling possible through containerization
+
+2. **Migration Path**
+   - Modules can be extracted into microservices gradually
+   - Event-driven patterns can be introduced incrementally
+   - Service discovery and API gateway can be added when needed
+   - Messaging technologies like Kafka or RabbitMQ can be used if needed 
+
+### Trade-offs Analysis
+
+#### Advantages of Current Approach
+
+1. **Simplicity**
+   - Single codebase
+   - Unified deployment
+   - Direct method calls instead of network calls
+   - Simpler testing and debugging
+
+2. **Performance**
+   - No network overhead between modules
+   - Shared resources (cache, database connections)
+     - Detailed caching strategies are explained below
+   - Lower latency for cross-module operations
+
+3. **Consistency**
+   - Strong consistency for related data
+   - Simpler transaction management
+   - Unified schema updates
+
+4. **Resource Efficiency**
+   - Lower infrastructure costs (potential, currently not the case)
+   - Fewer moving parts
+   - Simplified monitoring
+     - I didn't use but monitoring technologies can be integrated.
+
+#### What We Give Up
+
+1. **Independent Scaling**
+   - Cannot scale modules independently
+   - Resource allocation is shared
+
+2. **Technology Diversity**
+   - Locked into single technology stack
+   - Cannot optimize different modules with different technologies
+
+3. **Isolation**
+   - Bugs can potentially affect the entire system
+   - Deployments require full system updates
+
+#### When to Consider Microservices
+
+The project is designed to evolve into microservices when:
+
+1. **Scale Indicators**
+   - High load on specific modules
+   - Need for independent scaling
+   - Different resource requirements per module
+
+2. **Team Growth**
+   - Multiple teams working on different modules
+   - Need for independent deployment cycles
+   - Specialized technology requirements
+
+3. **Business Requirements**
+   - Different availability requirements per module
+   - Need for different security levels
+   - Geographic distribution requirements
+
+This architectural decision prioritizes development speed, simplicity, and maintainability while keeping the door open for future evolution as the project grows.
+
+
+
+## Technology Choices and Comparisons
+
+### Validation: Zod vs Alternatives
+
+#### Why Zod over Joi or Yup?
+- **Type Safety**: Zod provides first-class TypeScript support with automatic type inference
+- **Performance**: Smaller bundle size and better runtime performance
+- **Schema Inference**: Automatic type generation from schemas
+- **Transformations**: Built-in data transformation with type safety
+- **Error Handling**: More detailed and structured error messages
+
+Comparison:
+```
+Package | Bundle Size  | Type Safety | Performance
+--------|--------------|-------------|------------
+Zod     | ~15.9kB     | Excellent   | Very Good
+Joi     | ~88.5kB     | Limited     | Good
+Yup     | ~44.7kB     | Good        | Good
+```
+
+### ODM: Mongoose vs Alternatives
+
+> **Note**: Mongoose was a requirement specified in the case study. However, it's worth comparing it with alternatives to understand its strengths and potential areas for improvement in future projects.
+
+#### Why Mongoose over Prisma or TypeORM?
+- **Maturity**: Battle-tested with MongoDB
+- **Flexibility**: Better support for dynamic schemas
+- **Middleware**: Rich middleware ecosystem
+- **Query API**: Intuitive MongoDB-like query interface
+- **Community**: Large community and extensive plugins
+- **Case Study Requirement**: Specified as the required ODM for this project
+
+Comparison:
+```
+Feature          | Mongoose | Prisma  | TypeORM
+-----------------|----------|---------|----------
+MongoDB Support  | Native   | Limited | Limited
+Schema Flexibility| High    | Low     | Medium
+Learning Curve   | Medium   | High    | High
+Query Performance| Good     | Better  | Good
+Type Safety      | Good     | Better  | Better
+```
+
+While Prisma and TypeORM offer some advantages in terms of type safety and query performance, Mongoose was the perfect fit for this case study due to its native MongoDB support and alignment with the project requirements.
+
+### Caching: Redis vs Alternatives
+
+#### Why Redis over Memcached or Node-Cache?
+- **Data Types**: Rich data structure support
+- **Persistence**: Optional disk persistence
+- **Pub/Sub**: Built-in publish/subscribe
+- **Scalability**: Cluster support
+- **Performance**: Excellent performance characteristics
+
+Comparison:
+```
+Feature      | Redis    | Memcached | Node-Cache
+-------------|----------|-----------|------------
+Performance  | Excellent| Excellent | Good
+Data Types   | Many     | Basic     | Basic
+Persistence  | Yes      | No        | No
+Memory Usage | Moderate | Low       | High
+Scalability  | High     | Medium    | Low
+```
+
+
+## Pagination and Caching Strategy
+
+### Overview
+The application implements a robust caching strategy using Redis, with an interceptor pattern for transparent caching of paginated results. This approach ensures efficient data retrieval while maintaining clean separation of concerns.
+
+### Architecture
+- **Cache Interceptor**: Implements a singleton pattern to manage all caching operations
+- **Middleware Layer**: Provides three key middleware functions:
+  - `cachePagination`: Intercepts pagination requests and serves cached data if available
+  - `cacheResponse`: Caches response data for future requests
+  - `invalidateEntityCache`: Handles cache invalidation for specific entity types after mutations
+
+### Implementation Details
+1. **Batch Caching**
+   - Caches 100 records at a time (configurable via `CACHE_BATCH_SIZE`)
+   - Subsequent requests for different pages within this range are served from cache
+   - Cache entries expire after 5 minutes (configurable TTL)
+
+2. **Cache Keys**
+   - Format: `${entityType}:${sortBy}:${sortOrder}`
+   - Example: `movies:releaseDate:desc`
+   - Ensures unique caching based on entity type and sort parameters
+
+3. **Cache Invalidation**
+   - Automatic invalidation on CREATE/UPDATE/DELETE operations
+   - Entity-specific invalidation to prevent unnecessary cache clearing
+   - Handled transparently through middleware
+
+### Usage in Routes
+```typescript
+// Example route with caching
+router.get('/', cachePagination, cacheResponse, wrapRoute(controller.getAllMovies));
+
+// Example route with cache invalidation
+router.post('/', invalidateEntityCache('movies'), wrapRoute(controller.createMovie));
+```
+
+### Benefits
+1. **Separation of Concerns**
+   - Business logic remains clean in services
+   - Caching logic is centralized in the interceptor
+   - Routes define caching behavior declaratively
+
+2. **Performance**
+   - Reduced database load
+   - Faster response times for cached data
+   - Efficient batch caching strategy
+
+3. **Maintainability**
+   - Easy to modify caching behavior globally
+   - Simple to add caching to new routes
+   - Clear cache invalidation patterns
+
+4. **Flexibility**
+   - Configurable cache sizes and TTL
+   - Easy to extend for different caching requirements
+   - Simple to disable caching for specific routes
+
+### Example GET Request Flow
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+      'primaryColor': '#BB2528',
+      'primaryTextColor': '#fff',
+      'primaryBorderColor': '#7C0000',
+      'lineColor': '#F8B229',
+      'secondaryColor': '#006100',
+      'tertiaryColor': '#fff'
+    }}}%%
+sequenceDiagram
+    participant C as Client
+    participant I as Cache Interceptor
+    participant R as Redis Cache
+    participant S as Service Layer
+    participant DB as Database
+
+    C->>I: GET /api/movies?page=2&limit=10
+    I->>R: Check Cache
+    
+    alt Cache Hit
+        R-->>I: Return Cached Data
+        I-->>C: Return Paginated Results
+    else Cache Miss
+        R-->>I: Cache Miss
+        I->>S: Forward Request
+        S->>DB: Fetch Data
+        DB-->>S: Return Data
+        S-->>I: Return Data
+        I->>R: Cache Results
+        I-->>C: Return Paginated Results
+    end
+
+    Note over C,DB: Subsequent requests within cache window
+    C->>I: GET /api/movies?page=3&limit=10
+    I->>R: Check Cache
+    R-->>I: Return Cached Data
+    I-->>C: Return Paginated Results
+```
+
+1. Client requests `/api/movies?page=2&limit=10`
+2. Cache interceptor checks for cached data
+3. If cached, returns data from cache
+4. If not cached, fetches from database and caches result
+5. Subsequent requests within cache window are served from cache
+
+### Cache Invalidation Flow
+1. Client sends POST/PUT/DELETE request
+2. `invalidateEntityCache` middleware triggers
+3. Cache for specific entity type is marked as invalid
+4. Next GET request will fetch fresh data
+
+My key intention here for the caching strategy is providing an optimal balance between performance and data consistency while ensuring clean code architecture through the interceptor pattern.
+
+## Future Potential Development Areas
+
+1. **Authentication & Authorization**
+   - JWT-based authentication
+   - Role-based access control
+   - OAuth2 integration, etc.
+
+2. **Testing**
+   - Unit tests
+   - Integration tests
+   - E2E tests
+   - Test coverage reporting
+
+3. **Performance Optimizations**
+   - Query optimization
+   - Index optimization (Unique, Compound)
+   - Connection pooling
+
+4. **Additional Business Features**
+   - Movie ratings and reviews
+   - Validating movies with IMDB apis
+   - User favorites
+   - Watchlists
+   - Advanced search with full-text search
+   - Image upload for movie posters
+   - Batch operations
+
+5. **Infrastructure**
+   - CI/CD pipeline with test coverage, sonarqube stages
+   - Monitoring and alerting
+   - Performance metrics
+   - Auto-scaling (might be handful in case of cloud provider usage)
+
+6. **Documentation**
+   - API versioning
+   - Code documentation improvements
