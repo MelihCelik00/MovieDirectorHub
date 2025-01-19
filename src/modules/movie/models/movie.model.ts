@@ -26,7 +26,6 @@ export const movieSchema = z.object({
     .transform((str) => new Types.ObjectId(str)),
 });
 
-// Interface extending Document
 export interface IMovie extends Document {
   title: string;
   description: string;

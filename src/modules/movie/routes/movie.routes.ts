@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { wrapRoute } from '../../shared/utils/route-wrapper';
 import { MovieFactory } from '../movie.factory';
+import { cachePagination, cacheResponse, invalidateEntityCache } from '../../../middleware/cache.middleware';
 
 const router = Router();
 const controller = MovieFactory.getController();
@@ -9,19 +10,63 @@ const controller = MovieFactory.getController();
  * @swagger
  * /movies:
  *   get:
- *     summary: Get all movies
+ *     summary: Get all movies with pagination
  *     tags: [Movies]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [title, releaseDate, rating, genre]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort order (ascending or descending)
  *     responses:
  *       200:
- *         description: List of all movies
+ *         description: List of movies with pagination info
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Movie'
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Movie'
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of movies
+ *                 page:
+ *                   type: integer
+ *                   description: Current page number
+ *                 limit:
+ *                   type: integer
+ *                   description: Number of items per page
+ *                 totalPages:
+ *                   type: integer
+ *                   description: Total number of pages
  */
-router.get('/', wrapRoute(controller.getAllMovies));
+router.get('/', cachePagination, cacheResponse, wrapRoute(controller.getAllMovies));
 
 /**
  * @swagger
@@ -252,7 +297,7 @@ router.get('/:id', wrapRoute(controller.getMovieById));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', wrapRoute(controller.createMovie));
+router.post('/', invalidateEntityCache('movies'), wrapRoute(controller.createMovie));
 
 /**
  * @swagger
@@ -305,7 +350,7 @@ router.post('/', wrapRoute(controller.createMovie));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', wrapRoute(controller.updateMovie));
+router.put('/:id', invalidateEntityCache('movies'), wrapRoute(controller.updateMovie));
 
 /**
  * @swagger
@@ -330,6 +375,6 @@ router.put('/:id', wrapRoute(controller.updateMovie));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:id', wrapRoute(controller.deleteMovie));
+router.delete('/:id', invalidateEntityCache('movies'), wrapRoute(controller.deleteMovie));
 
 export default router; 

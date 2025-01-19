@@ -1,9 +1,9 @@
-import { Types, Document } from 'mongoose';
+import { Types } from 'mongoose';
 import { MovieRepository } from '../repositories/movie.repository';
 import { movieSchema, IMovie } from '../models/movie.model';
 import { NotFoundError, ValidationError } from '../../../utils/errors';
-import { PaginatedResult, PaginationOptions } from '../../shared/repositories/base.repository';
 import { DirectorService } from '../../director/services/director.service';
+import { PaginationOptions } from '../../shared/repositories/base.repository';
 import { z } from 'zod';
 
 export class MovieService {
@@ -12,12 +12,28 @@ export class MovieService {
     private readonly directorService: DirectorService
   ) {}
 
-  async createMovie(data: Omit<IMovie, keyof Document>): Promise<IMovie> {
+  async getAllMovies(page: number = 1, limit: number = 10, sortBy?: string, sortOrder: 'asc' | 'desc' = 'asc') {
+    const options: PaginationOptions = {
+      page,
+      limit,
+      sort: sortBy ? { [sortBy]: sortOrder === 'asc' ? 1 : -1 as 1 | -1 } : undefined
+    };
+
+    const result = await this.repository.findWithPagination({}, options);
+    
+    return {
+      data: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages
+    };
+  }
+
+  async createMovie(data: z.infer<typeof movieSchema>): Promise<IMovie> {
     try {
-      // Validate director exists first
       await this.directorService.getDirectorById(data.directorId.toString());
 
-      // Coerce rating to number if it's a string
       if (typeof data.rating === 'string') {
         data.rating = parseFloat(data.rating);
       }
@@ -46,33 +62,20 @@ export class MovieService {
     return movie;
   }
 
-  async getAllMovies(options: PaginationOptions): Promise<PaginatedResult<IMovie>> {
-    return this.repository.findWithPagination({}, options);
-  }
-
-  async updateMovie(
-    id: string,
-    data: Partial<Omit<IMovie, keyof Document>>
-  ): Promise<IMovie> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new ValidationError('Invalid movie ID format');
-    }
-
-    // If directorId is being updated, validate the new director exists
-    if (data.directorId) {
-      await this.directorService.getDirectorById(data.directorId.toString());
-    }
-
+  async updateMovie(id: string, data: Partial<z.infer<typeof movieSchema>>): Promise<IMovie> {
     try {
-      // Validate the update data
-      const validatedData = movieSchema.partial().parse(data);
+      if (data.directorId) {
+        await this.directorService.getDirectorById(data.directorId.toString());
+      }
 
-      const updatedMovie = await this.repository.update(id, validatedData);
-      if (!updatedMovie) {
+      const validatedData = movieSchema.partial().parse(data);
+      const movie = await this.repository.update(id, validatedData);
+      
+      if (!movie) {
         throw new NotFoundError(`Movie with ID ${id} not found`);
       }
 
-      return updatedMovie;
+      return movie;
     } catch (error) {
       if (error instanceof z.ZodError) {
         const issues = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
@@ -83,11 +86,8 @@ export class MovieService {
   }
 
   async deleteMovie(id: string): Promise<void> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new ValidationError('Invalid movie ID format');
-    }
-
     const deleted = await this.repository.delete(id);
+    
     if (!deleted) {
       throw new NotFoundError(`Movie with ID ${id} not found`);
     }
@@ -131,4 +131,6 @@ export class MovieService {
 
     return this.repository.findByRatingRange(minRating, maxRating);
   }
-} 
+}
+
+export default MovieService; 

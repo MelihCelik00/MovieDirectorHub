@@ -52,10 +52,10 @@ if (config.api.swaggerEnabled) {
       ],
     },
     apis: [
-      './src/modules/**/routes/*.ts',    // Development (TypeScript)
-      './dist/modules/**/routes/*.js',    // Production (Compiled JavaScript)
-      './src/modules/shared/schemas/*.ts', // Schema definitions
-      './dist/modules/shared/schemas/*.js' // Compiled schema definitions
+      './src/modules/**/routes/*.ts',    // development
+      './dist/modules/**/routes/*.js',    // production - ts compiled to js
+      './src/modules/shared/schemas/*.ts', // schema definitions
+      './dist/modules/shared/schemas/*.js' // compiled schema definitions
     ],
   };
 

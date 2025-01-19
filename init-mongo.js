@@ -1,7 +1,7 @@
-// Create movie-director-hub database
+// Create db
 db = db.getSiblingDB('movie-director-hub');
 
-// Create collections
+//  collections
 db.createCollection('directors');
 db.createCollection('movies');
 
@@ -15,7 +15,7 @@ db.movies.createIndex({ genre: 1 });
 db.movies.createIndex({ directorId: 1 });
 db.movies.createIndex({ imdbId: 1 }, { unique: true });
 
-// Optional: Add some sample data
+// Optional: Add some initial sample data
 db.directors.insertMany([
   {
     firstName: "Christopher",
@@ -35,11 +35,11 @@ db.directors.insertMany([
   }
 ]);
 
-// Get the inserted directors' IDs
+// Get the inserted directors' IDs for sample movie creation
 const nolanId = db.directors.findOne({ firstName: "Christopher", lastName: "Nolan" })._id;
 const scorseseId = db.directors.findOne({ firstName: "Martin", lastName: "Scorsese" })._id;
 
-// Insert sample movies
+// Insert initial sample movies
 db.movies.insertMany([
   {
     title: "Inception",

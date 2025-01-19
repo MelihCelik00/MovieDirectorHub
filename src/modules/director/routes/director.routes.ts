@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { wrapRoute } from '../../shared/utils/route-wrapper';
 import { DirectorFactory } from '../director.factory';
+import { cachePagination, cacheResponse, invalidateEntityCache } from '../../../middleware/cache.middleware';
 
 const router = Router();
 const controller = DirectorFactory.getController();
@@ -9,19 +10,63 @@ const controller = DirectorFactory.getController();
  * @swagger
  * /directors:
  *   get:
- *     summary: Get all directors
+ *     summary: Get all directors with pagination
  *     tags: [Directors]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [firstName, lastName, birthDate]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort order (ascending or descending)
  *     responses:
  *       200:
- *         description: List of all directors
+ *         description: List of directors with pagination info
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Director'
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Director'
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of directors
+ *                 page:
+ *                   type: integer
+ *                   description: Current page number
+ *                 limit:
+ *                   type: integer
+ *                   description: Number of items per page
+ *                 totalPages:
+ *                   type: integer
+ *                   description: Total number of pages
  */
-router.get('/', wrapRoute(controller.getAllDirectors));
+router.get('/', cachePagination, cacheResponse, wrapRoute(controller.getAllDirectors));
 
 /**
  * @swagger
@@ -154,7 +199,7 @@ router.get('/:id', wrapRoute(controller.getDirectorById));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', wrapRoute(controller.createDirector));
+router.post('/', invalidateEntityCache('directors'), wrapRoute(controller.createDirector));
 
 /**
  * @swagger
@@ -199,7 +244,7 @@ router.post('/', wrapRoute(controller.createDirector));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', wrapRoute(controller.updateDirector));
+router.put('/:id', invalidateEntityCache('directors'), wrapRoute(controller.updateDirector));
 
 /**
  * @swagger
@@ -224,6 +269,6 @@ router.put('/:id', wrapRoute(controller.updateDirector));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:id', wrapRoute(controller.deleteDirector));
+router.delete('/:id', invalidateEntityCache('directors'), wrapRoute(controller.deleteDirector));
 
 export default router; 

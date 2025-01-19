@@ -7,8 +7,17 @@ export class DirectorRepository extends MongoDBRepository<IDirector> {
     super(model);
   }
 
-  async findByName(firstName: string, lastName: string): Promise<IDirector | null> {
-    return this.findOne({ firstName, lastName });
+  async findByName(firstName?: string, lastName?: string): Promise<IDirector[]> {
+    const query: any = {};
+    
+    if (firstName) {
+      query.firstName = new RegExp(firstName, 'i');
+    }
+    if (lastName) {
+      query.lastName = new RegExp(lastName, 'i');
+    }
+
+    return this.find(query);
   }
 
   async findByBirthDateRange(startDate: Date, endDate: Date): Promise<IDirector[]> {
