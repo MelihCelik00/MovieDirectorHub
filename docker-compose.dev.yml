@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      target: builder
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - DEBUG=app:*
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "9229:9229" # For debugging
+
+  mongodb:
+    command: mongod --logpath=/dev/null # Disable logging to console
+    environment:
+      - MONGODB_DATABASE=movie-director-hub-dev
+
+  redis:
+    command: redis-server --appendonly yes --loglevel warning
+
+  mongo-express:
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin 
