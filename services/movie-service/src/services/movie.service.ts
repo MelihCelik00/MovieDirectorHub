@@ -8,6 +8,7 @@ import {
 } from '@movie-director-hub/shared';
 import { Types } from 'mongoose';
 import { MovieRepository } from '../repositories/movie.repository';
+import { checkDirectorExists } from '../utils/director-api';
 
 /**
  * Movie Service class for handling business logic
@@ -37,6 +38,20 @@ export class MovieService {
       throw new ConflictError(
         `Movie with IMDB ID ${movieData.imdbId} already exists`,
         '/movies'
+      );
+    }
+
+    // Check if director exists
+    const directorExists = await checkDirectorExists(movieData.directorId);
+    if (!directorExists) {
+      throw new ValidationError(
+        `Director with ID ${movieData.directorId} does not exist`,
+        '/movies',
+        [{
+          code: 'invalid_reference',
+          path: ['directorId'],
+          message: 'Referenced director does not exist'
+        }]
       );
     }
 
@@ -108,6 +123,22 @@ export class MovieService {
       }
     }
 
+    // If directorId is being updated, check if the new director exists
+    if (updateData.directorId) {
+      const directorExists = await checkDirectorExists(updateData.directorId);
+      if (!directorExists) {
+        throw new ValidationError(
+          `Director with ID ${updateData.directorId} does not exist`,
+          '/movies',
+          [{
+            code: 'invalid_reference',
+            path: ['directorId'],
+            message: 'Referenced director does not exist'
+          }]
+        );
+      }
+    }
+
     // Transform the validated data for database
     const transformedData = {
       title: updateData.title,
@@ -155,6 +186,15 @@ export class MovieService {
    * Gets movies by director ID
    */
   async getMoviesByDirectorId(directorId: string, params: PaginationParams = {}) {
+    // Check if director exists before searching for movies
+    const directorExists = await checkDirectorExists(directorId);
+    if (!directorExists) {
+      throw new NotFoundError(
+        `Director with ID ${directorId} not found`,
+        '/movies/director'
+      );
+    }
+
     const { movies, total } = await this.movieRepository.findByDirectorId(
       directorId,
       params
