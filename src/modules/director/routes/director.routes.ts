@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { wrapRoute } from '../../shared/utils/route-wrapper';
 import { DirectorFactory } from '../director.factory';
-import { cachePagination, cacheResponse, invalidateEntityCache } from '../../../middleware/cache.middleware';
+import { cacheResponse, invalidateEntityCache } from '../../../middleware/cache.middleware';
 
 const router = Router();
 const controller = DirectorFactory.getController();
@@ -66,7 +66,7 @@ const controller = DirectorFactory.getController();
  *                   type: integer
  *                   description: Total number of pages
  */
-router.get('/', cachePagination, cacheResponse, wrapRoute(controller.getAllDirectors));
+router.get('/', cacheResponse, wrapRoute(controller.getAllDirectors));
 
 /**
  * @swagger
