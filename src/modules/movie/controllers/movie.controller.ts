@@ -17,8 +17,10 @@ export class MovieController {
   };
 
   getAllMovies: RequestHandler = async (req: Request, res: Response) => {
-    const paginationOptions = parsePaginationQuery(req.query);
-    const movies = await this.service.getAllMovies(paginationOptions);
+    const { page, limit, sort } = parsePaginationQuery(req.query);
+    const sortBy = sort ? Object.keys(sort)[0] : undefined;
+    const sortOrder = sort ? (sort[Object.keys(sort)[0]] === 1 ? 'asc' : 'desc') : 'asc';
+    const movies = await this.service.getAllMovies(page, limit, sortBy, sortOrder);
     res.json(movies);
   };
 
