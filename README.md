@@ -118,6 +118,7 @@ src/
 git clone https://github.com/MelihCelik00/MovieDirectorHub.git
 cd MovieDirectorHub
 ```
+   -  Create a `.env` file in the root directory. Check .env.example file for the required variables.
 
 2. Start the entire application:
 ```bash
